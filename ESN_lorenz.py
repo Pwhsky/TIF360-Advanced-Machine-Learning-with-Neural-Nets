@@ -4,40 +4,53 @@ import scipy as sci
 from  matplotlib import pyplot as plt
 from reservoirpy.datasets import lorenz
 from reservoirpy.nodes import Reservoir, Ridge, Input
+
+#Data parameters
 data = np.load("xyz_coordinates.npy")
 data = np.transpose(data)
-
-#Parameters:
-neurons=205
-M = 3
-p = 0.95
-
+p      = 0.95  #training/validation ratio
 X = data[0:int(len(data)*p),:] #training data
 Y = data[int(len(data)*p):-1,:] #Validation data
 
 
+#Hyperparameters to play around with:
+neurons                   = 205 
+M                         = 3  #no. of coordinates
+reservoir_weight_variance = 2/neurons
+input_weight_variance     = 1/neurons
+ridge_parameter           = 0.0005 #This gives good results
+###################################################################
+
+
+#Initialize the weights as gaussian distributed numbers.
 def generateWeights():
-    w_res = np.random.randn(neurons,neurons)*(2/neurons)
-    w_in  = np.random.randn  (neurons,M)*(1/neurons)
+    w_res = np.random.randn(neurons,neurons)*reservoir_weight_variance
+    w_in  = np.random.randn(neurons,M)*input_weight_variance
     return w_res,w_in
 
 
-W_res,W_input = generateWeights()
 
-#Reservoir neuron states (r)
-states              = np.zeros((1,neurons))
-states_over_time    = np.zeros((len(X),neurons))
+
+
+#The idea is to compute a new set of states for each timestep and store these 
+#in a matrix to then perform ridge regression on:
+    
+#initialize current neuron states in reservoir, and weight matrices:
+W_res,W_input         = generateWeights()
+states                = np.zeros((1,neurons))
+states_over_time      = np.zeros((len(X),neurons))
+
+#add the initial states to the storage:
 states_over_time[0,:] = states
 
-#append new states with: states_over_time[t,:] = states
 
-
+#The main simulation loop, getting dimensions right is a hassle but it works now.
 for t in range(len(X)-1):
     
-    #compute new states according to (1a):
+    #compute new states according to equation (1a):
     recurrent_term = np.squeeze(np.dot(W_res,np.transpose(states)))
-    current_term = np.dot(W_input,X[t,:])
-    new_states = np.tanh(np.transpose(np.add(recurrent_term,current_term)))
+    current_term   = np.dot(W_input,X[t,:])
+    new_states     = np.tanh(np.transpose(np.add(recurrent_term,current_term)))
     
     #add the new states to our storage
     states_over_time[t+1,:] = new_states
@@ -45,24 +58,31 @@ for t in range(len(X)-1):
     #update so that the new states can be used in the next iteration
     states = new_states
 
-#Apply ridge regression to train the output matrix
-kI = np.eye(neurons)*0.005
-R = states_over_time
-term1 = np.linalg.inv((np.dot(np.transpose(R),R)+kI))
-term2 = np.dot(np.transpose(R),X)
+#Apply ridge regression using our storage matrix to train the output matrix W_out.
+kI    = np.eye(neurons)*ridge_parameter 
+R     = states_over_time
+
+
+
+term1 = np.linalg.inv((np.dot(np.transpose(R),R)+kI))  #(X'X + λI)^-1
+term2 = np.dot(np.transpose(R),X)                      #X'y 
+
 W_out =  np.dot(term1,term2)
 
-#predict the future:
-O = np.dot(states,W_out)
-predicted_coordinates = np.zeros((len(Y),3))
 
+
+#predict the future of the time series, and compare to validation data Y
+    
+predicted_coordinates = np.zeros((len(Y),3))
+output = np.dot(states,W_out)
 for i in range(len(predicted_coordinates)):
-    O = np.dot(states,W_out)
+    output = np.dot(states,W_out)
     recurrent_term = np.squeeze(np.dot(W_res,np.transpose(states)))
-    current_term = np.dot(W_input,O[:])
-    new_states = np.tanh(np.transpose(np.add(recurrent_term,current_term)))
-    states = new_states;
-    predicted_coordinates[i,:] = O
+    current_term   = np.dot(W_input,output[:])
+    new_states     = np.tanh(np.transpose(np.add(recurrent_term,current_term)))
+    states         = new_states;
+    predicted_coordinates[i,:] = output
+
 
 
 x = predicted_coordinates[:,0]
@@ -72,12 +92,11 @@ z = predicted_coordinates[:,2]
 fig2 = plt.figure()
 
 
-plt.plot(np.arange(len(Y)),Y[:,1],label = "Ground Truth")
-plt.plot(np.arange(len(Y)),y,label = "Predicted")
+plt.plot(np.arange(len(Y)),Y[:,1],label = "Validation data")
+plt.plot(np.arange(len(Y)),y,label      = "Predicted data")
 plt.legend()
-#fig = plt.figure()
-#ax = fig.add_subplot(111, projection = '3d')
-#plt.plot(x,y,z,linewidth = 0.6)
+
+
 
 
 
