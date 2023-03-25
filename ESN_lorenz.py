@@ -1,6 +1,7 @@
 import numpy as np
 import reservoirpy
 import scipy as sci
+from scipy import stats
 from  matplotlib import pyplot as plt
 from reservoirpy.datasets import lorenz
 from reservoirpy.nodes import Reservoir, Ridge, Input
@@ -8,32 +9,36 @@ from reservoirpy.nodes import Reservoir, Ridge, Input
 #Data parameters
 data = np.load("xyz_coordinates.npy")
 data = np.transpose(data)
-p      = 0.95  #training/validation ratio
+p      = 0.90         #training/validation ratio
 X = data[0:int(len(data)*p),:] #training data
 Y = data[int(len(data)*p):-1,:] #Validation data
 
 
 #Hyperparameters to play around with:
-neurons                   = 205 
-M                         = 3  #no. of coordinates
+neurons                   = 500         #500 good
+M                         = 3           #no. of coordinates
+reservoir_sparsity        = 0.9         #0.9 good
 reservoir_weight_variance = 2/neurons
 input_weight_variance     = 1/neurons
-ridge_parameter           = 0.0005 #This gives good results
+ridge_parameter           = 1e-5     #0.0005 gives good results
 ###################################################################
 
 
 #Initialize the weights as gaussian distributed numbers.
+
+
 def generateWeights():
-    w_res = np.random.randn(neurons,neurons)*reservoir_weight_variance
+ 
+    w_res = sci.sparse.random(neurons,neurons,density=reservoir_sparsity)*reservoir_weight_variance
+    w_res = w_res.toarray()
     w_in  = np.random.randn(neurons,M)*input_weight_variance
     return w_res,w_in
 
 
 
-
-
-#The idea is to compute a new set of states for each timestep and store these 
-#in a matrix to then perform ridge regression on:
+#The idea is to compute a new set of neuron states in the
+# reservoir for each timestep and store these states
+# in a matrix to then perform ridge regression on.
     
 #initialize current neuron states in reservoir, and weight matrices:
 W_res,W_input         = generateWeights()
@@ -92,9 +97,10 @@ z = predicted_coordinates[:,2]
 fig2 = plt.figure()
 
 
-plt.plot(np.arange(len(Y)),Y[:,1],label = "Validation data")
-plt.plot(np.arange(len(Y)),y,label      = "Predicted data")
+plt.plot(np.arange(len(Y) )/len(Y),Y[:,1],label = "Validation data")
+plt.plot(np.arange(len(Y) )/len(Y),y ,label      = "Predicted data")
 plt.legend()
+plt.grid()
 
 
 
