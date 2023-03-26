@@ -1,37 +1,35 @@
 import numpy as np
-import reservoirpy
 import scipy as sci
-from scipy import stats
+
 from  matplotlib import pyplot as plt
-from reservoirpy.datasets import lorenz
-from reservoirpy.nodes import Reservoir, Ridge, Input
+
 
 #Data parameters
 data = np.load("xyz_coordinates.npy")
 data = np.transpose(data)
-p      = 0.90         #training/validation ratio
+p      = 0.88      #training/validation ratio
 X = data[0:int(len(data)*p),:] #training data
 Y = data[int(len(data)*p):-1,:] #Validation data
 
 
 #Hyperparameters to play around with:
-neurons                   = 500         #500 good
+neurons                   = 620    #500 good
 M                         = 3           #no. of coordinates
-reservoir_sparsity        = 0.9         #0.9 good
-reservoir_weight_variance = 2/neurons
-input_weight_variance     = 1/neurons
-ridge_parameter           = 1e-5     #0.0005 gives good results
+reservoir_sparsity        = 1       #0.9 good
+reservoir_weight_variance = 2/(neurons)
+input_weight_variance     = 1/(neurons)
+ridge_parameter           = 1e-5   #0.0005 gives good results
 ###################################################################
 
 
 #Initialize the weights as gaussian distributed numbers.
 
 
-def generateWeights():
+def generateWeights(inputs,neuron_number):
  
-    w_res = sci.sparse.random(neurons,neurons,density=reservoir_sparsity)*reservoir_weight_variance
+    w_res = sci.sparse.random(neuron_number,neuron_number,density=reservoir_sparsity)*reservoir_weight_variance
     w_res = w_res.toarray()
-    w_in  = np.random.randn(neurons,M)*input_weight_variance
+    w_in  = np.random.randn(neuron_number,inputs)*input_weight_variance
     return w_res,w_in
 
 
@@ -41,7 +39,7 @@ def generateWeights():
 # in a matrix to then perform ridge regression on.
     
 #initialize current neuron states in reservoir, and weight matrices:
-W_res,W_input         = generateWeights()
+W_res,W_input         = generateWeights(M,neurons)
 states                = np.zeros((1,neurons))
 states_over_time      = np.zeros((len(X),neurons))
 
@@ -78,7 +76,7 @@ W_out =  np.dot(term1,term2)
 
 #predict the future of the time series, and compare to validation data Y
     
-predicted_coordinates = np.zeros((len(Y),3))
+predicted_coordinates = np.zeros((len(Y),M))
 output = np.dot(states,W_out)
 for i in range(len(predicted_coordinates)):
     output = np.dot(states,W_out)
@@ -95,13 +93,14 @@ y = predicted_coordinates[:,1]
 z = predicted_coordinates[:,2]
 
 fig2 = plt.figure()
+#1.1037 is theoretical lyaponov time
 
-
-plt.plot(np.arange(len(Y) )/len(Y),Y[:,1],label = "Validation data")
-plt.plot(np.arange(len(Y) )/len(Y),y ,label      = "Predicted data")
+plt.plot(np.arange(len(Y) )*(10)/(len(Y)*1.1037),Y[:,1],'--',label = "Validation data")
+plt.plot(np.arange(len(Y) )*(10)/(len(Y)*1.1037),y ,label      = "Predicted data")
 plt.legend()
 plt.grid()
-
+plt.xlabel(r"Lyaponov time $\lambda _1 t$")
+plt.title("Reservoir trained on xyz")
 
 
 
