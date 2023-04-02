@@ -8,7 +8,7 @@ tic = time.time()
 #Data parameters
 data = np.load("xyz_coordinates.npy")
 data = np.transpose(data)
-p      = 0.88      #training/validation ratio
+p      = 0.88      #training/validation ratio 
 X = data[0:int(len(data)*p),:] #training data
 Y = data[int(len(data)*p):-1,:] #Validation data
 
@@ -89,15 +89,23 @@ for i in range(len(predicted_coordinates)):
 
 
 
+
 x = predicted_coordinates[:,0]
 y = predicted_coordinates[:,1]
 z = predicted_coordinates[:,2]
 
 fig2 = plt.figure()
-#1.1037 is theoretical lyaponov time
 
-plt.plot(np.arange(len(Y) )*(10)/(len(Y)*1.1037),Y[:,1],'--',label = "Validation data")
-plt.plot(np.arange(len(Y) )*(10)/(len(Y)*1.1037),y ,label      = "Predicted data")
+error = abs(Y[:,1]-y)
+
+
+#1.1037 is theoretical lyaponov time for the lorenz system,
+# adjust x-axis such that it displays Lyaponov times
+lyaponov_times = np.arange(len(Y) )*(10)/(len(Y)*1.1037)
+
+plt.plot(lyaponov_times, Y[:,1],'--',label = "Validation data")
+plt.plot(lyaponov_times, y          ,label = "Predicted data")
+plt.plot(lyaponov_times, error      ,label = "Error")
 plt.legend()
 plt.grid()
 plt.xlabel(r"Lyaponov time $\lambda _1 t$")

@@ -1,14 +1,14 @@
-
+import time
 import numpy as np
 import scipy as sci
 
 from  matplotlib import pyplot as plt
 from sklearn import preprocessing
-
+tic =  time.time()
 #Data parameters
 data = np.load("xyz_coordinates.npy")
 data = np.transpose(data)
-p      = 0.9       #training/validation ratio
+p      = 0.88      #training/validation ratio
 X = data[0:int(len(data)*p),:] #training data
 Y = data[int(len(data)*p):-1,:] #Validation data
 
@@ -19,8 +19,6 @@ plt.xlabel(r"Lyaponov time $\lambda _1 t$")
 plt.ylabel(r"y(t)")
 plt.title("Reservoir trained on y")
 
-def ReLU(x):
-    return x * (x > 0)
 def generateWeights(inputs,neuron_number):
  
    # w_res = sci.sparse.random(neuron_number,neuron_number,density=reservoir_sparsity)*reservoir_weight_variance
@@ -37,10 +35,10 @@ def generateWeights(inputs,neuron_number):
     
 
 #Hyperparameters to play around with:
-neurons                   = 900   #500 good
+neurons                   = 300   #500 good
 reservoir_sparsity        = 1  #0.9 good
-reservoir_weight_variance = 0.00417
-input_weight_variance     = 0.9
+reservoir_weight_variance = 0.039
+input_weight_variance     = 0.7
 ridge_parameter           = 2e-4  #0.0005 gives good results
 
 #initialize current neuron states in reservoir, and weight matrices:
@@ -102,10 +100,12 @@ y = predicted_coordinates
 
 #lyaponov coefficent = 0.906
 #Lyaponov time= 0.906**-1 = 1.1037
-
-plt.plot(np.arange((len(Y)))*(10)/(len(Y)*1.1037), y,label  = "predicted")
-plt.plot(np.arange(len(Y))*(10)/(len(Y)*1.1037),Y[:,1],'--',label = "Validation data")
+lyaponov_times=np.arange(len(Y) )*(10)/(len(Y)*1.1037)
+plt.plot(lyaponov_times, y,label  = "predicted")
+plt.plot(lyaponov_times,Y[:,1],'--',label = "Validation data")
 plt.show
     
 plt.legend()
 
+toc = time.time()
+print("Elapsed time: " + str(round(toc-tic)) + " seconds.")
