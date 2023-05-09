@@ -11,7 +11,7 @@ b = 8/3 #beta
 
 
 duration       = 40        #how long to simulate for. #40 for producing test data
-res     = 40000            #resolution
+res            = 40000            #resolution
 start_position1 = [-0.8,-0.2,0.5]
 separation = 1e-9
 cutoff = int(0.225*res)

@@ -30,6 +30,7 @@ def generateWeights(inputs,neuron_number):
 
 fig2 = plt.figure()
 print("")
+
 for s in range(1,10):
     for k in range(5):
         reservoir_weight_variance = s/(neurons*2)
@@ -86,24 +87,27 @@ for s in range(1,10):
             predicted_coordinates[i,:] = output
         
         
-        y = predicted_coordinates[:,1]    
+        y = predicted_coordinates[:,1]  
+        
+        #Divide by 5 to get mean error
         error = error+ (Y[:,1]-y)/5
         error = abs(error)
-
+        
+    U, singular_matrix, V = np.linalg.svd(W_res)    
     #1.1037 is theoretical lyaponov time
-
+    print("Maximum singular value = " + str(singular_matrix[0]))
     print("Reservoir variance = " + str(round(reservoir_weight_variance,5)))
-    print("Mean error: " + str(round(np.mean(error),5)))
-    print("Error variance: " + str(np.round(np.var(error),5)))
+    print("Mean error: " + str(round(np.mean(error[0:2000]),5)))
+    print("Error variance: " + str(np.round(np.var(error[0:2000]),5)))
     print("-----------------------------")
     
-    plt.semilogy(lyaponov_times, error ,label  = "var = " + str(round(reservoir_weight_variance,5)))
+    plt.semilogy(lyaponov_times[0:2000], error[0:2000] ,label  = "Max Sing. Value " + str(round(singular_matrix[0],3)))
 
 plt.legend()
 plt.grid()
 plt.xlabel(r"Lyaponov time $\lambda _1 t$")
 plt.ylabel(r"$\delta$")
-plt.title(r"Reservoir variance error $\delta$")
+plt.title(r"Prediction error $\delta$")
 toc = time.time()
 
 print("Elapsed time: " + str(round(toc-tic)) + " seconds.")

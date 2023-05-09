@@ -8,14 +8,14 @@ tic = time.time()
 #Data parameters
 data = np.load("xyz_coordinates.npy")
 data = np.transpose(data)
-p      = 0.88      #training/validation ratio 
+p      = 0.9      #training/validation ratio 
 X = data[0:int(len(data)*p),:] #training data
 Y = data[int(len(data)*p):-1,:] #Validation data
 
 
 #Hyperparameters to play around with:
 neurons                   = 600    #500 good
-M                         = 3           #no. of coordinates
+M                         = 3        #no. of coordinates
 reservoir_sparsity        = 1       #0.9 good
 reservoir_weight_variance = 0.00417  #Derived from parameter sweep, 2/neurons is also good
 input_weight_variance     = 1/(neurons)
@@ -90,9 +90,9 @@ for i in range(len(predicted_coordinates)):
 
 
 
-x = predicted_coordinates[:,0]
+#x = predicted_coordinates[:,0]
 y = predicted_coordinates[:,1]
-z = predicted_coordinates[:,2]
+#z = predicted_coordinates[:,2]
 
 fig2 = plt.figure()
 
@@ -109,6 +109,7 @@ plt.plot(lyaponov_times, error      ,label = "Error")
 plt.legend()
 plt.grid()
 plt.xlabel(r"Lyaponov time $\lambda _1 t$")
+plt.ylabel("y")
 plt.title("Reservoir trained on xyz")
 
 toc = time.time()
