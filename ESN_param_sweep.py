@@ -4,7 +4,7 @@ import time
 from  matplotlib import pyplot as plt
 
 tic = time.time()
-
+size_of_sweep = 60
 #Data parameters
 data = np.load("xyz_coordinates.npy")
 data = np.transpose(data)
@@ -15,12 +15,13 @@ Y = data[int(len(data)*p):-1,:] #Validation data
 lyaponov_times=np.arange(len(Y) )*(10)/(len(Y)*1.1037) #x-axis in lyaponov times
 
 #Hyperparameters to play around with:
-neurons                   = 600    #500 good
+neurons                   = 500    #500 good
 M                         = 3           #no. of coordinates
 reservoir_sparsity        = 1      #0.9 good
 ridge_parameter           = 1e-5  #0.0005 gives good results
 ###################################################################
-
+singular_value_history = np.zeros(size_of_sweep)
+error_history = np.zeros(size_of_sweep)
 def generateWeights(inputs,neuron_number):
     
     w_res = sci.sparse.random(neuron_number,neuron_number,density=reservoir_sparsity)*reservoir_weight_variance
@@ -28,12 +29,9 @@ def generateWeights(inputs,neuron_number):
     w_in  = np.random.randn(neuron_number,inputs)*input_weight_variance
     return w_res,w_in
 
-fig2 = plt.figure()
-print("")
-
-for s in range(1,10):
+for s in range(1,size_of_sweep):
     for k in range(5):
-        reservoir_weight_variance = s/(neurons*2)
+        reservoir_weight_variance = s/(2000)
         input_weight_variance     = 1/(neurons)
         
         #The idea is to compute a new set of neuron states in the
@@ -93,19 +91,22 @@ for s in range(1,10):
         error = error+ (Y[:,1]-y)/5
         error = abs(error)
         
-    U, singular_matrix, V = np.linalg.svd(W_res)    
+    U, singular_values, V = np.linalg.svd(W_res)    
+    singular_value_history[s] = singular_values[0]
+    error_history[s] = np.mean(error[0:2000])
     #1.1037 is theoretical lyaponov time
-    print("Maximum singular value = " + str(singular_matrix[0]))
-    print("Reservoir variance = " + str(round(reservoir_weight_variance,5)))
+   # print("Maximum singular value = " + str(singular_values[0]))
+  #  print("Reservoir variance = " + str(round(reservoir_weight_variance,5)))
     print("Mean error: " + str(round(np.mean(error[0:2000]),5)))
-    print("Error variance: " + str(np.round(np.var(error[0:2000]),5)))
+   # print("Error variance: " + str(np.round(np.var(error[0:2000]),5)))
     print("-----------------------------")
     
-    plt.semilogy(lyaponov_times[0:2000], error[0:2000] ,label  = "Max Sing. Value " + str(round(singular_matrix[0],3)))
-
+fig = plt.figure()
+# plt.semilogy(lyaponov_times[0:2000], error[0:2000] ,label  = "Max Sing. Value " + str(round(singular_matrix[0],3)))
+plt.loglog(singular_value_history[1:],error_history[1:])
 plt.legend()
 plt.grid()
-plt.xlabel(r"Lyaponov time $\lambda _1 t$")
+plt.xlabel(r"Maximum singular value")
 plt.ylabel(r"$\delta$")
 plt.title(r"Prediction error $\delta$")
 toc = time.time()
